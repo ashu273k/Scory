@@ -1,11 +1,13 @@
 import User from '../models/User.js';
-import { generateAccessToken, generateRefreshToken } from '../utils/generateToken';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/generateToken';
 
 
 export const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
-
+    if (!username || !email || !password) {
+      return res.status(400).json({'Invalid input': 'All fields are required'});
+    }
     // Check if user exists
     const existingUser = await User.findOne({ 
       $or: [{ email }, { username }] 
