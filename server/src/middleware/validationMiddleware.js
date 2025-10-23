@@ -12,9 +12,10 @@ export const validateRequest = (schema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
-          field: err.path.join('.'),
-          message: err.message,
+        // Safely access errors array with fallback
+        const formattedErrors = (error.errors || []).map((err) => ({
+          field: err.path?.join('.') || 'unknown',
+          message: err.message || 'Validation error',
         }));
 
         return res.status(400).json({
@@ -25,7 +26,11 @@ export const validateRequest = (schema) => {
       }
 
       // Handle other errors
-      next(error);
+      console.error('Validation middleware error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during validation',
+      });
     }
   };
 };
@@ -39,13 +44,53 @@ export const validateQuery = (schema) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        const formattedErrors = (error.errors || []).map((err) => ({
+          field: err.path?.join('.') || 'unknown',
+          message: err.message || 'Validation error',
+        }));
+
         return res.status(400).json({
           success: false,
           message: 'Invalid query parameters',
-          errors: error.errors,
+          errors: formattedErrors,
         });
       }
-      next(error);
+
+      console.error('Query validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during query validation',
+      });
+    }
+  };
+};
+
+// Params validation (for route parameters like /users/:id)
+export const validateParams = (schema) => {
+  return async (req, res, next) => {
+    try {
+      const validated = await schema.parseAsync(req.params);
+      req.params = validated;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const formattedErrors = (error.errors || []).map((err) => ({
+          field: err.path?.join('.') || 'unknown',
+          message: err.message || 'Validation error',
+        }));
+
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid URL parameters',
+          errors: formattedErrors,
+        });
+      }
+
+      console.error('Params validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error during params validation',
+      });
     }
   };
 };
