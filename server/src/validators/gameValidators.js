@@ -29,8 +29,8 @@ export const updateScoreSchema = z.object({
 });
 
 export const gameQuerySchema = z.object({
-  status: z.enum(['waiting', 'live', 'completed', 'cancelled']).optional(),
-  gameType: z.enum(['cricket', 'football', 'basketball', 'custom']).optional(),
+  status: z.string().optional(),
+  gameType: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   page: z.coerce.number().int().min(1).default(1),
 });
