@@ -6,7 +6,7 @@
 
 **Real-time multi-sport scoring with WebSocket updates**
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-success?style=for-the-badge)](https://scory-cg1v.vercel.app)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Visit_App-success?style=for-the-badge)](https://scory-cg1v.vercel.app/login)
 [![Backend API](https://img.shields.io/badge/⚡_Backend-Active-blue?style=for-the-badge)](https://scory.onrender.com)
 
 </div>
@@ -87,7 +87,7 @@ npm run dev  # Runs on http://localhost:5173
 
 ---
 
-## � API Endpoints
+## 📡 API Endpoints
 
 ### Authentication
 ```
@@ -145,7 +145,7 @@ Controller → Database → Socket Broadcast → Live Update
 
 ---
 
-## � Deployment
+## 🚀 Deployment
 
 ### Vercel (Frontend)
 
