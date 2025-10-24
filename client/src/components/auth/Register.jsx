@@ -163,7 +163,7 @@ export function Register() {
 
         {/* Footer */}
         <p className="text-center text-purple-100 text-sm mt-8">
-          © 2024 Scory. All rights reserved.
+          © 2025 Scory. All rights reserved.
         </p>
       </div>
     </div>

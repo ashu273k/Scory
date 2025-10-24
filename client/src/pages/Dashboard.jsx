@@ -11,15 +11,42 @@ export function Dashboard() {
   const [createModal, setCreateModal] = useState(false);
   const [joinModal, setJoinModal] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [refreshInterval, setRefreshInterval] = useState(null);
 
+  // Fetch games on mount and when filter changes
   useEffect(() => { 
-    fetchGames(filter !== 'all' ? { status: filter } : {}); 
+    fetchGames(filter !== 'all' ? { status: filter } : {});
+    
+    // Set up auto-refresh every 3 seconds to see completed games
+    const interval = setInterval(() => {
+      fetchGames(filter !== 'all' ? { status: filter } : {});
+    }, 3000);
+    
+    setRefreshInterval(interval);
+    
+    return () => clearInterval(interval);
   }, [filter, fetchGames]);
+
+  const handleCreateGame = async () => {
+    setCreateModal(false);
+    // Refresh games after creating
+    setTimeout(() => {
+      fetchGames(filter !== 'all' ? { status: filter } : {});
+    }, 500);
+  };
+
+  const handleJoinGame = async () => {
+    setJoinModal(false);
+    // Refresh games after joining
+    setTimeout(() => {
+      fetchGames(filter !== 'all' ? { status: filter } : {});
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-blue-100">
+      <header className="bg-white shadow-lg border-b border-blue-100 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
@@ -46,7 +73,7 @@ export function Dashboard() {
       <main className="max-w-7xl mx-auto px-6 py-12">
         {/* Stats & Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Total Games</p>
@@ -56,7 +83,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-shadow">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Live Games</p>
@@ -68,7 +95,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-gray-600 text-sm font-medium">Completed</p>
@@ -85,40 +112,49 @@ export function Dashboard() {
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <button
             onClick={() => setCreateModal(true)}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
           >
             <span className="text-2xl">➕</span>
             Create Game
           </button>
           <button
             onClick={() => setJoinModal(true)}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
           >
             <span className="text-2xl">🔗</span>
             Join Game
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {['all', 'waiting', 'live', 'completed'].map(status => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105 ${
-                filter === status
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300'
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        {/* Refresh Button */}
+        <div className="mb-8 flex justify-between items-center">
+          <div className="flex flex-wrap gap-2">
+            {['all', 'waiting', 'live', 'completed'].map(status => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-6 py-2 rounded-full font-semibold transition-all transform hover:scale-105 ${
+                  filter === status
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+                    : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => fetchGames(filter !== 'all' ? { status: filter } : {})}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors text-sm"
+            title="Refresh games list"
+          >
+            🔄 Refresh
+          </button>
         </div>
 
         {/* Games List */}
         <div className="space-y-4">
-          {loading ? (
+          {loading && games.length === 0 ? (
             <div className="flex justify-center items-center py-20">
               <div className="animate-spin">
                 <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full"></div>
@@ -136,7 +172,7 @@ export function Dashboard() {
               {filter !== 'all' && (
                 <button
                   onClick={() => setFilter('all')}
-                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   View All Games
                 </button>
@@ -153,8 +189,20 @@ export function Dashboard() {
       </main>
 
       {/* Modals */}
-      <CreateGameModal isOpen={createModal} onClose={() => setCreateModal(false)} />
-      <JoinGameModal isOpen={joinModal} onClose={() => setJoinModal(false)} />
+      <CreateGameModal 
+        isOpen={createModal} 
+        onClose={() => {
+          setCreateModal(false);
+          handleCreateGame();
+        }} 
+      />
+      <JoinGameModal 
+        isOpen={joinModal} 
+        onClose={() => {
+          setJoinModal(false);
+          handleJoinGame();
+        }} 
+      />
     </div>
   );
 }

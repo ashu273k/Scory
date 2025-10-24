@@ -27,7 +27,7 @@ export const createGame = async (req, res) => {
     .populate('creator', 'username email profilePicture')
     .populate('participants.userId', 'username profilePicture');
 
-  // Emit socket event (will be handled by socket middleware)
+  // Emit socket event
   req.app.get('io')?.emit('gameCreated', { game: populatedGame });
 
   res.status(201).json({
@@ -36,45 +36,54 @@ export const createGame = async (req, res) => {
     game: populatedGame,
   });
 };
+
 // Get all games with filters
 export const getGames = async (req, res) => {
-  // Use validatedQuery if available, otherwise use defaults
-  const { status, gameType, limit = 50, page = 1 } = req.validatedQuery || {
-    status: undefined,
-    gameType: undefined,
-    limit: 50,
-    page: 1,
-  };
+  try {
+    // Get query params directly and validate them here
+    const { status, gameType, limit = 50, page = 1 } = req.query;
+    
+    // Validate and sanitize query parameters
+    const validStatus = status && ['waiting', 'live', 'completed', 'cancelled'].includes(status) ? status : undefined;
+    const validGameType = gameType && ['cricket', 'football', 'basketball', 'custom'].includes(gameType) ? gameType : undefined;
+    const validLimit = Math.max(1, Math.min(100, parseInt(limit) || 50));
+    const validPage = Math.max(1, parseInt(page) || 1);
 
-  const filter = {};
-  if (status) filter.status = status;
-  if (gameType) filter.gameType = gameType;
+    const filter = {};
+    if (status) filter.status = status;
+    if (gameType) filter.gameType = gameType;
 
-  const pageNum = parseInt(page) || 1;
-  const limitNum = parseInt(limit) || 50;
-  const skip = (pageNum - 1) * limitNum;
+    const skip = (page - 1) * limit;
 
-  const [games, total] = await Promise.all([
-    Game.find(filter)
-      .populate('creator', 'username profilePicture')
-      .populate('participants.userId', 'username profilePicture')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limitNum)
-      .lean(),
-    Game.countDocuments(filter),
-  ]);
+    const [games, total] = await Promise.all([
+      Game.find(filter)
+        .populate('creator', 'username profilePicture')
+        .populate('participants.userId', 'username profilePicture')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Game.countDocuments(filter),
+    ]);
 
-  res.json({
-    success: true,
-    games,
-    pagination: {
-      total,
-      page: pageNum,
-      pages: Math.ceil(total / limitNum),
-      limit: limitNum,
-    },
-  });
+    res.json({
+      success: true,
+      games,
+      pagination: {
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        limit,
+      },
+    });
+  } catch (error) {
+    console.error('Get games error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch games',
+      error: error.message,
+    });
+  }
 };
 
 // Get single game

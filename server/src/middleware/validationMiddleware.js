@@ -2,17 +2,13 @@ import { ZodError } from 'zod';
 
 // Generic validation middleware for any Zod schema
 export const validateRequest = (schema) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
     try {
-      // Parse and validate request body
-      const validated = await schema.parseAsync(req.body);
-      
-      // Replace req.body with validated data
+      const validated = schema.parse(req.body);
       req.body = validated;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        // Safely access errors array with fallback
         const formattedErrors = (error.errors || []).map((err) => ({
           field: err.path?.join('.') || 'unknown',
           message: err.message || 'Validation error',
@@ -25,7 +21,6 @@ export const validateRequest = (schema) => {
         });
       }
 
-      // Handle other errors
       console.error('Validation middleware error:', error);
       return res.status(500).json({
         success: false,
@@ -35,12 +30,19 @@ export const validateRequest = (schema) => {
   };
 };
 
-// Query parameter validation
+// Query parameter validation - FIXED: Don't try to assign to req.query
 export const validateQuery = (schema) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
+    // If no schema provided, just continue
+    if (!schema) {
+      return next();
+    }
+
     try {
-      const validated = await schema.parseAsync(req.query);
-      req.query = validated;
+      // Validate the query parameters
+      const validated = schema.parse(req.query);
+      // Store in a new non-readonly property
+      req.validatedQuery = validated;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -65,12 +67,16 @@ export const validateQuery = (schema) => {
   };
 };
 
-// Params validation (for route parameters like /users/:id)
+// Params validation
 export const validateParams = (schema) => {
-  return async (req, res, next) => {
+  return (req, res, next) => {
+    if (!schema) {
+      return next();
+    }
+
     try {
-      const validated = await schema.parseAsync(req.params);
-      req.params = validated;
+      const validated = schema.parse(req.params);
+      req.validatedParams = validated;
       next();
     } catch (error) {
       if (error instanceof ZodError) {
