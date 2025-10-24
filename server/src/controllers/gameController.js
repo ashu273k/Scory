@@ -36,16 +36,23 @@ export const createGame = async (req, res) => {
     game: populatedGame,
   });
 };
-
 // Get all games with filters
 export const getGames = async (req, res) => {
-  const { status, gameType, limit, page } = req.query;
+  // Use validatedQuery if available, otherwise use defaults
+  const { status, gameType, limit = 50, page = 1 } = req.validatedQuery || {
+    status: undefined,
+    gameType: undefined,
+    limit: 50,
+    page: 1,
+  };
 
   const filter = {};
   if (status) filter.status = status;
   if (gameType) filter.gameType = gameType;
 
-  const skip = (page - 1) * limit;
+  const pageNum = parseInt(page) || 1;
+  const limitNum = parseInt(limit) || 50;
+  const skip = (pageNum - 1) * limitNum;
 
   const [games, total] = await Promise.all([
     Game.find(filter)
@@ -53,7 +60,7 @@ export const getGames = async (req, res) => {
       .populate('participants.userId', 'username profilePicture')
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit)
+      .limit(limitNum)
       .lean(),
     Game.countDocuments(filter),
   ]);
@@ -63,9 +70,9 @@ export const getGames = async (req, res) => {
     games,
     pagination: {
       total,
-      page,
-      pages: Math.ceil(total / limit),
-      limit,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      limit: limitNum,
     },
   });
 };
